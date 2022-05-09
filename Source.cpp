@@ -313,7 +313,7 @@ void WiezaKontrolna::WypiszWieze()
 /*Ustawia rozmiary naszego nieba*/
 void WiezaKontrolna::SetRozmiary()
 {
-	srand(unsigned int(time(NULL)));
+	srand(int(time(nullptr)));
 	OprawaGraficzna(1);
 	cout << "Prosze podac wysokosc nieba, enter, a nastepnie szerokosc nieba:\n";
 	OprawaGraficzna(2);
