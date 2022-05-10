@@ -15,28 +15,28 @@
 using namespace std;
 
 struct Samolot {
-	int WspX;
-	int WspY;
-	int Kierunek;
-	char Nazwa;
-	int ObecnyWzlot;
-	char KierunekLotuY;
+	int x_position;
+	int y_position;
+	int x_direction;
+	char name;
+	int current_yaw;
+	char y_direction;
 };
 
 void gotoxy(int x, int y);
-void OprawaGraficzna(int n);
-void OmowienieDzialania();
+void draw_stars(int n);
+void show_instruction();
 /*Glowna Klasa programu*/
-class WiezaKontrolna {
+class Control_Tower {
 public:
-	WiezaKontrolna();
+	Control_Tower();
 	void Main();
-	void WypiszWieze();
-	void WypiszSamoloty();
+	void draw_environment();
+	void draw_airplanes();
 	void InitSamoloty();
 	void DodajSamoloty();
 	void WykonanieTury();
-	bool CzyNazwaDostepna(char);
+	bool CzynameDostepna(char);
 	bool CzyKolizja();
 	bool CzyKolizja(Samolot);
 	void UsunSamoloty();
@@ -55,12 +55,12 @@ private:
 	vector<vector<Samolot>> Niebo;
 };
 /*Konstruktor domyslny, wywoluje obiekt i to w nim dzieje sie caly program*/
-WiezaKontrolna::WiezaKontrolna()
+Control_Tower::Control_Tower()
 {
 	SetRozmiary();
 	ObliczeniePrzepustowosci();
 	InitSamoloty();
-	WypiszWieze();
+	draw_environment();
 	do {
 		Main();
 	} while (!CzyKolizja());
@@ -70,12 +70,12 @@ WiezaKontrolna::WiezaKontrolna()
 	PAUSE
 }
 /*Glowna petla programu, kiedy z niej wyjdziemy konczymy aktualne wywolanie obiektu*/
-void WiezaKontrolna::Main()
+void Control_Tower::Main()
 {
 	DodajSamoloty();
-	WypiszWieze();
+	draw_environment();
 	UsunSamoloty();
-	WypiszSamoloty();
+	draw_airplanes();
 	Komunikat();
 	string komenda, Polecenie;
 	char Spacja;
@@ -85,66 +85,66 @@ void WiezaKontrolna::Main()
 			break;
 		}
 		else {
-			char Nazwa = toupper(Spacja);
-			cout << endl << Nazwa;
+			char name = toupper(Spacja);
+			cout << endl << name;
 			getline(cin, komenda);
-			Polecenie = Nazwa+komenda;
+			Polecenie = name+komenda;
 			PolecenieDlaSamolotu(Polecenie);
-			WypiszSamoloty();
+			draw_airplanes();
 			Komunikat();
 		}
 	} while (Spacja != ' ');
 	WykonanieTury();
 }
 /*Inicjalizuje dwa pierwsze samoloty wiezy kontrolnej, po jednym na bok ekranu*/
-void WiezaKontrolna::InitSamoloty()
+void Control_Tower::InitSamoloty()
 {
 	Samolot StartowyL;
-	StartowyL.Kierunek = 1;
-	StartowyL.Nazwa = 'A';
-	StartowyL.ObecnyWzlot = 0;
-	StartowyL.WspX = 1;
-	StartowyL.WspY = rand() % (RozmiarWysokosc - 2) + 1;
-	StartowyL.KierunekLotuY = '=';
+	StartowyL.x_direction = 1;
+	StartowyL.name = 'A';
+	StartowyL.current_yaw = 0;
+	StartowyL.x_position = 1;
+	StartowyL.y_position = rand() % (RozmiarWysokosc - 2) + 1;
+	StartowyL.y_direction = '=';
 	Samolot StartowyP;
-	StartowyP.Kierunek = 2;
-	StartowyP.Nazwa = 'B';
-	StartowyP.ObecnyWzlot = 0;
-	StartowyP.WspX = RozmiarSzerokosc;
-	StartowyP.WspY = rand() % (RozmiarWysokosc - 2) + 1;
-	StartowyP.KierunekLotuY = '=';
+	StartowyP.x_direction = 2;
+	StartowyP.name = 'B';
+	StartowyP.current_yaw = 0;
+	StartowyP.x_position = RozmiarSzerokosc;
+	StartowyP.y_position = rand() % (RozmiarWysokosc - 2) + 1;
+	StartowyP.y_direction = '=';
 	ObecneSamoloty.push_back(StartowyL);
 	ObecneSamoloty.push_back(StartowyP);
 }
 /*W "losowych" odstepach czasu dodaje samoloty do naszego nieba*/
-void WiezaKontrolna::DodajSamoloty()
+void Control_Tower::DodajSamoloty()
 {
 	char Name;
 	Samolot _Var;
 	int _var = rand() % 6;
 	if ((ObecneSamoloty.size() <= (unsigned)PrzepustowoscNieba) && (_var == 0)) {
 		do {
-			_Var.KierunekLotuY = '=';
-			_Var.ObecnyWzlot = 0;
-			_Var.Kierunek = rand() % 2 + 1;
+			_Var.y_direction = '=';
+			_Var.current_yaw = 0;
+			_Var.x_direction = rand() % 2 + 1;
 			do {
 				Name = char(rand() % 26 + 65);
-				_Var.Nazwa = Name;
-			} while (!CzyNazwaDostepna(Name));
-			if (_Var.Kierunek == 1)
-				_Var.WspX = 1;
-			else if (_Var.Kierunek == 2)
-				_Var.WspX = RozmiarSzerokosc;
-			_Var.WspY = rand() % (RozmiarWysokosc - 2) + 1;
+				_Var.name = Name;
+			} while (!CzynameDostepna(Name));
+			if (_Var.x_direction == 1)
+				_Var.x_position = 1;
+			else if (_Var.x_direction == 2)
+				_Var.x_position = RozmiarSzerokosc;
+			_Var.y_position = rand() % (RozmiarWysokosc - 2) + 1;
 		} while (CzyKolizja(_Var));
 		ObecneSamoloty.push_back(_Var);
 	}
 }
 /*Usuwa samoloty ktore juz dolecialy bezpiecznie do brzegu ekranu */
-void WiezaKontrolna::UsunSamoloty()
+void Control_Tower::UsunSamoloty()
 {
 	for (it = ObecneSamoloty.begin(); it != ObecneSamoloty.end(); ) {
-		if ((it->Kierunek == 1) && (it->WspX == (RozmiarSzerokosc)) || (it->Kierunek == 2) && (it->WspX == 2)) {
+		if ((it->x_direction == 1) && (it->x_position == (RozmiarSzerokosc)) || (it->x_direction == 2) && (it->x_position == 2)) {
 			it = ObecneSamoloty.erase(it);
 		}
 		else {
@@ -153,56 +153,56 @@ void WiezaKontrolna::UsunSamoloty()
 	}
 }
 /*Funkcja ta sprawdza Czy w danej turze ktorykolwiek z samolotow lezy w elipsie o polosi x = 5 i polosi y = 3 innego samolotu, jezeli tak to nastepuje kolizja*/
-bool WiezaKontrolna::CzyKolizja()
+bool Control_Tower::CzyKolizja()
 {
 	for (unsigned int i = 0; i< ObecneSamoloty.size();++i)
 		for (unsigned int j = 0; j < ObecneSamoloty.size(); ++j) {
 			if (i == j)
 				continue;
 		
-			int Wspx1 = ObecneSamoloty.at(i).WspX;
-			int Wspx2 = ObecneSamoloty.at(j).WspX;
-			int Wspy1 = ObecneSamoloty.at(i).WspY;
-			int Wspy2 = ObecneSamoloty.at(j).WspY;
+			int x_position1 = ObecneSamoloty.at(i).x_position;
+			int x_position2 = ObecneSamoloty.at(j).x_position;
+			int y_position1 = ObecneSamoloty.at(i).y_position;
+			int y_position2 = ObecneSamoloty.at(j).y_position;
 
-			float Odleglosc = (((static_cast<float>(Wspx2) - static_cast<float>(Wspx1))
-				* (static_cast<float>(Wspx2) - static_cast<float>(Wspx1))) / 25)
-				+ ((static_cast<float>(Wspy2) - static_cast<float>(Wspy1))
-					* (static_cast<float>(Wspy2) - static_cast<float>(Wspy1)) / 9);
+			float Odleglosc = (((static_cast<float>(x_position2) - static_cast<float>(x_position1))
+				* (static_cast<float>(x_position2) - static_cast<float>(x_position1))) / 25)
+				+ ((static_cast<float>(y_position2) - static_cast<float>(y_position1))
+					* (static_cast<float>(y_position2) - static_cast<float>(y_position1)) / 9);
 			if (Odleglosc <= 1 && Odleglosc > 0) {
-				Zderzenie[0] = ObecneSamoloty.at(i).Nazwa;
-				Zderzenie[1] = ObecneSamoloty.at(j).Nazwa;
+				Zderzenie[0] = ObecneSamoloty.at(i).name;
+				Zderzenie[1] = ObecneSamoloty.at(j).name;
 				return true; // jest kolizja
 			}
 		}
 	return false;// nie ma kolizji
 }
 /*Analogiczna funkcja, ale tym razem badajaca czy nowo generowany samolot nie uderzy w zaden obecnie lecacy*/
-bool WiezaKontrolna::CzyKolizja(Samolot samolot)
+bool Control_Tower::CzyKolizja(Samolot samolot)
 {
 	for (unsigned int i = 0; i < ObecneSamoloty.size(); ++i){
 
 
-	int Wspx1 = samolot.WspX;
-	int Wspx2 = ObecneSamoloty.at(i).WspX;
-	int Wspy1 = samolot.WspY;
-	int Wspy2 = ObecneSamoloty.at(i).WspY;
+	int x_position1 = samolot.x_position;
+	int x_position2 = ObecneSamoloty.at(i).x_position;
+	int y_position1 = samolot.y_position;
+	int y_position2 = ObecneSamoloty.at(i).y_position;
 
-	float Odleglosc = (((static_cast<float>(Wspx2) - static_cast<float>(Wspx1))
-		* (static_cast<float>(Wspx2) - static_cast<float>(Wspx1))) / 25)
-		+ ((static_cast<float>(Wspy2) - static_cast<float>(Wspy1))
-		* (static_cast<float>(Wspy2) - static_cast<float>(Wspy1))/9);
+	float Odleglosc = (((static_cast<float>(x_position2) - static_cast<float>(x_position1))
+		* (static_cast<float>(x_position2) - static_cast<float>(x_position1))) / 25)
+		+ ((static_cast<float>(y_position2) - static_cast<float>(y_position1))
+		* (static_cast<float>(y_position2) - static_cast<float>(y_position1))/9);
 	if (Odleglosc <= 1 && Odleglosc > 0)
 		return true;// jest kolizja
 }
 	return false;// nie ma kolizji
 }
 /*Funkcja zapewnia ze kazdy samolot bedzie mial unikalna nazwe*/
-bool WiezaKontrolna::CzyNazwaDostepna(char nazwa)
+bool Control_Tower::CzynameDostepna(char name)
 {
 	for (it = ObecneSamoloty.begin(); it != ObecneSamoloty.end(); ++it)
 	{
-		if (it->Nazwa != nazwa)
+		if (it->name != name)
 			continue;
 		else 
 			return false;
@@ -210,94 +210,94 @@ bool WiezaKontrolna::CzyNazwaDostepna(char nazwa)
 	return true;
 }
 /*Funkcja przyjmujaca komendy i zmieniajaca je w polecenia dla samolotow*/
-void WiezaKontrolna::PolecenieDlaSamolotu(string komenda)
+void Control_Tower::PolecenieDlaSamolotu(string komenda)
 {
 	vector<Samolot>::iterator itp;
-	for(itp = ObecneSamoloty.begin(); itp->Nazwa != komenda[0]; itp++)
+	for(itp = ObecneSamoloty.begin(); itp->name != komenda[0]; itp++)
 	{ }
 	if (komenda[1] == 'c')
 	{
-		itp->KierunekLotuY = '=';
-		itp->ObecnyWzlot = 0;
+		itp->y_direction = '=';
+		itp->current_yaw = 0;
 	}
 	else {
 		if (komenda[1] == '\\') {
-			if (itp->Kierunek == 1)
-				itp->KierunekLotuY = '\\';
-			else if (itp->Kierunek == 2)
-				itp->KierunekLotuY = '\\';
+			if (itp->x_direction == 1)
+				itp->y_direction = '\\';
+			else if (itp->x_direction == 2)
+				itp->y_direction = '\\';
 		}
 		else if (komenda[1] == '\/') {
-			if (itp->Kierunek == 1)
-				itp->KierunekLotuY = '\/';
-			else if (itp->Kierunek == 2)
-				itp->KierunekLotuY = '\/';
+			if (itp->x_direction == 1)
+				itp->y_direction = '\/';
+			else if (itp->x_direction == 2)
+				itp->y_direction = '\/';
 		}
-		itp->ObecnyWzlot = itp->ObecnyWzlot +  static_cast<int>(komenda[2]-48);
+		itp->current_yaw = itp->current_yaw +  static_cast<int>(komenda[2]-48);
 	}
 }
 /*Wykonanie pojedynczej tury, przesuniecie samolotu w lewo/w prawo(zawsze) oraz ewentualnie w gore lub dol*/
-void WiezaKontrolna::WykonanieTury()
+void Control_Tower::WykonanieTury()
 {
 	for (it = ObecneSamoloty.begin(); it != ObecneSamoloty.end(); ++it) {
-		if (it->Kierunek == 1) {
-			it->WspX++;
-			if (it->KierunekLotuY == '\\') {
-				it->WspY++;
-				it->ObecnyWzlot--;
+		if (it->x_direction == 1) {
+			it->x_position++;
+			if (it->y_direction == '\\') {
+				it->y_position++;
+				it->current_yaw--;
 			}
-			else if (it->KierunekLotuY == '\/'){
-				it->WspY--;
-			it->ObecnyWzlot--;
+			else if (it->y_direction == '\/'){
+				it->y_position--;
+			it->current_yaw--;
 		}
 		}
-		else if (it->Kierunek == 2) {
-			it->WspX--;
-			if (it->KierunekLotuY == '\\'){
-				it->WspY--;
-			it->ObecnyWzlot--;
+		else if (it->x_direction == 2) {
+			it->x_position--;
+			if (it->y_direction == '\\'){
+				it->y_position--;
+			it->current_yaw--;
 			}
-			else if (it->KierunekLotuY == '\/'){
-				it->WspY++;
-				it->ObecnyWzlot--;
+			else if (it->y_direction == '\/'){
+				it->y_position++;
+				it->current_yaw--;
 			}
 		}
-		if (it->ObecnyWzlot == 0)
-			it->KierunekLotuY = '=';
+		if (it->current_yaw == 0)
+			it->y_direction = '=';
 	}
 }
 /*Funkcja wypisuje aktualne polozenie samolotow w konsoli*/
-void WiezaKontrolna::WypiszSamoloty()
+void Control_Tower::draw_airplanes()
 {
 	for (it = ObecneSamoloty.begin(); it != ObecneSamoloty.end(); ++it) {
 		Samolot _Var = *it;
-		if ((_Var.WspX == 1) || (_Var.WspX) == RozmiarSzerokosc) {
-			if (_Var.Kierunek == 1) {
-				gotoxy(2, _Var.WspY + 1);
-				cout << _Var.Nazwa;
+		if ((_Var.x_position == 1) || (_Var.x_position) == RozmiarSzerokosc) {
+			if (_Var.x_direction == 1) {
+				gotoxy(2, _Var.y_position + 1);
+				cout << _Var.name;
 			}
-			else if (_Var.Kierunek == 2) {
-				gotoxy(RozmiarSzerokosc + 3, _Var.WspY + 1);
-				cout << _Var.Nazwa;
+			else if (_Var.x_direction == 2) {
+				gotoxy(RozmiarSzerokosc + 3, _Var.y_position + 1);
+				cout << _Var.name;
 			}
 		}
-		else if (_Var.Kierunek == 1) {
-			gotoxy(_Var.WspX - 1, _Var.WspY + 1);
-			cout << _Var.KierunekLotuY << "(" << _Var.Nazwa << _Var.ObecnyWzlot << ")";
+		else if (_Var.x_direction == 1) {
+			gotoxy(_Var.x_position - 1, _Var.y_position + 1);
+			cout << _Var.y_direction << "(" << _Var.name << _Var.current_yaw << ")";
 		}
-		else if(_Var.Kierunek == 2 ){
-			gotoxy(_Var.WspX, _Var.WspY + 1);
-			cout << "(" << _Var.Nazwa << _Var.ObecnyWzlot << ")" << _Var.KierunekLotuY;
+		else if(_Var.x_direction == 2 ){
+			gotoxy(_Var.x_position, _Var.y_position + 1);
+			cout << "(" << _Var.name << _Var.current_yaw << ")" << _Var.y_direction;
 		}
 	}
 }
 /*Skromna funkcja w duzym przyblizeniu obliczajaca optymalna maksymalna ilosc samolotow*/
-void WiezaKontrolna::ObliczeniePrzepustowosci()
+void Control_Tower::ObliczeniePrzepustowosci()
 {
 	PrzepustowoscNieba = (RozmiarSzerokosc*RozmiarWysokosc)/150 +2;
 }
 /*Funkcja wypisujaca "Niebo"*/
-void WiezaKontrolna::WypiszWieze()
+void Control_Tower::draw_environment()
 {
 	CLS
 		for (int i = 0; i < RozmiarWysokosc; i++) {
@@ -311,13 +311,13 @@ void WiezaKontrolna::WypiszWieze()
 		}
 }
 /*Ustawia rozmiary naszego nieba*/
-void WiezaKontrolna::SetRozmiary()
+void Control_Tower::SetRozmiary()
 {
 	srand(int(time(nullptr)));
-	OprawaGraficzna(1);
+	draw_stars(1);
 	cout << "Prosze podac wysokosc nieba, enter, a nastepnie szerokosc nieba:\n";
-	OprawaGraficzna(2);
-	OprawaGraficzna(3);
+	draw_stars(2);
+	draw_stars(3);
 	int a, b;
 	do {
 		cin >> a;
@@ -332,7 +332,7 @@ void WiezaKontrolna::SetRozmiary()
 	cin.ignore();
 }
 /*Komunikat wyswietlany podczas pracy programu*/
-void WiezaKontrolna::Komunikat()
+void Control_Tower::Komunikat()
 {
 	gotoxy(1, RozmiarWysokosc + 1);
 	cout << "Spacja - nastepna tura,\n<znak samolotu> / <liczba 1-9> - nakaz wzniesienia sie o podana liczbe pol,\n"
@@ -354,21 +354,21 @@ void MenuGlowne()
 	do
 	{
 		CLS
-			OprawaGraficzna(1);
+			draw_stars(1);
 		cout << "Mini Symulacja Wiezy Kontroli lotow w konsoli by Damian Kakol and Krzysztof Dymanowski\n";
 		cout << "                 Prosze podac numer opcji i wcisnac enter: \n"
 			<< "   1. Prezentacja Symulacji\n"
 			<< "   2. Krotkie omowienie dzialania programu\n"
 			<< "   3. Wyjscie z programu.\n";
-		OprawaGraficzna(2);
-		OprawaGraficzna(3);
+		draw_stars(2);
+		draw_stars(3);
 		cin >> wybor;
 		switch (wybor)
 		{
 		case 1: {CLS
-			WiezaKontrolna Boeing;}
+			Control_Tower Boeing;}
 			  break;
-		case 2: OmowienieDzialania();
+		case 2: show_instruction();
 			break;
 		case 3: exit(0);
 			break;
@@ -376,10 +376,10 @@ void MenuGlowne()
 	} while (wybor != 3);
 }
 /*Krotka instrukcja i omowienie dzialania programu*/
-void OmowienieDzialania()
+void show_instruction()
 {
 	CLS
-		OprawaGraficzna(1);
+		draw_stars(1);
 	cout << " Symulator Wiezy Kontroli lotow jest prostym przykladem tego jak programowanie\n"
 		<< " obiektowe moze znaczaco ulatwic zycie programiscie. Dzieki dzialaniu jednej klasy\n"
 		<< " nie trzeba dzielic naszego podprogramu na poszczegolne funkcje, a jedynie na metody\n"
@@ -387,12 +387,12 @@ void OmowienieDzialania()
 	    << " Spacja - nastepna tura,\n<znak samolotu> / <liczba 1-9> - nakaz wzniesienia sie o podana liczbe pol,\n"
 		<< " <znak samolotu> \\ <liczba 1-9> - nakaz opadania o podana liczbe pol,\n"
 		<< " <znak samolotu> c - anulowanie rozkazu.\n";
-	OprawaGraficzna(2);
-	OprawaGraficzna(3);
+	draw_stars(2);
+	draw_stars(3);
 	PAUSE
 }
 /*Minimum mimorum oprawy graficznej dla projektu*/
-void OprawaGraficzna(int n)
+void draw_stars(int n)
 {
 	switch (n)
 	{
