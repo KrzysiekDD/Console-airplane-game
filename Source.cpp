@@ -1,9 +1,7 @@
-// Damian Kakol 184890 & Krzysztof Dymanowski 184836 IDE Microsoft Visual Studio/JetBrains CLion
 #include <iostream>
 #include <iomanip>
 #include <time.h>
 #include <vector>
-
 #include <cstdlib>
 #include <conio.h>
 #include <stdio.h>
@@ -13,8 +11,8 @@
 #define PAUSE system("pause");
 #define CLS system("cls");
 using namespace std;
-
-struct Samolot {
+// Airplane structure used to store parameters of particular airplanes
+struct Airplane {
 	int x_position;
 	int y_position;
 	int x_direction;
@@ -25,8 +23,8 @@ struct Samolot {
 
 void gotoxy(int x, int y);
 void draw_stars(int n);
-void show_instruction();
-/*Glowna Klasa programu*/
+void show_instructions();
+//Main class of the game
 class Control_Tower {
 public:
 	Control_Tower();
@@ -38,23 +36,21 @@ public:
 	void next_cycle();
 	bool is_name_available(char);
 	bool collision();
-	bool collision(Samolot);
+	bool collision(Airplane);
 	void del_airplanes();
 	void airplane_action(string);
 	void set_dimensions();
 	void get_airspace_capacity();
-	void display_message();
+	void display_controls();
 private:
 	int airspace_capacity;
 	int dimension_width;
 	int dimension_height;
-	char Zderzenie[2];
-	vector<Samolot> current_airplanes;
-	vector<Samolot>::iterator it;
-	vector<vector<int>> Kolizja;
-	vector<vector<Samolot>> Niebo;
+	char impact[2];
+	vector<Airplane> current_airplanes;
+	vector<Airplane>::iterator it;
 };
-/*Konstruktor domyslny, wywoluje obiekt i to w nim dzieje sie caly program*/
+//Constructor method
 Control_Tower::Control_Tower()
 {
 	set_dimensions();
@@ -65,48 +61,48 @@ Control_Tower::Control_Tower()
 		Main();
 	} while (!collision());
 	CLS
-		cout << "Niestety samoloty " << Zderzenie[0] << " oraz " << Zderzenie[1] << " znalazly sie zbyt blisko siebie!\n"
-		<< "Sprobuj ponownie.";
+		cout << "Unfortunately " << impact[0] << " and " << impact[1] << " flew too close to each other!\n"
+		<< "Try again.";
 	PAUSE
 }
-/*Glowna petla programu, kiedy z niej wyjdziemy konczymy aktualne wywolanie obiektu*/
+//Main function, called in a loop inside the main_menu function
 void Control_Tower::Main()
 {
 	add_airplanes();
 	draw_environment();
 	del_airplanes();
 	draw_airplanes();
-	display_message();
-	string komenda, Polecenie;
-	char Spacja;
+	display_controls();
+	string command, order;
+	char next_turn;
 	do {
- 		Spacja = _getch();
-		if (Spacja == ' ') {
+ 		next_turn = _getch();
+		if (next_turn == ' ') {
 			break;
 		}
 		else {
-			char name = toupper(Spacja);
+			char name = toupper(next_turn);
 			cout << endl << name;
-			getline(cin, komenda);
-			Polecenie = name+komenda;
-			airplane_action(Polecenie);
+			getline(cin, command);
+			order = name+command;
+			airplane_action(order);
 			draw_airplanes();
-			display_message();
+			display_controls();
 		}
-	} while (Spacja != ' ');
+	} while (next_turn != ' ');
 	next_cycle();
 }
-/*Inicjalizuje dwa pierwsze samoloty wiezy kontrolnej, po jednym na bok ekranu*/
+//Initializes first two airplanes, one coming from the left and the other from the right
 void Control_Tower::initial_airplanes()
 {
-	Samolot StartowyL;
+	Airplane StartowyL;
 	StartowyL.x_direction = 1;
 	StartowyL.name = 'A';
 	StartowyL.current_yaw = 0;
 	StartowyL.x_position = 1;
 	StartowyL.y_position = rand() % (dimension_height - 2) + 1;
 	StartowyL.y_direction = '=';
-	Samolot StartowyP;
+	Airplane StartowyP;
 	StartowyP.x_direction = 2;
 	StartowyP.name = 'B';
 	StartowyP.current_yaw = 0;
@@ -116,11 +112,11 @@ void Control_Tower::initial_airplanes()
 	current_airplanes.push_back(StartowyL);
 	current_airplanes.push_back(StartowyP);
 }
-/*W "losowych" odstepach czasu dodaje samoloty do naszego nieba*/
+//Adds airplanes to the airspace in random time intervals
 void Control_Tower::add_airplanes()
 {
 	char Name;
-	Samolot _Var;
+	Airplane _Var;
 	int _var = rand() % 6;
 	if ((current_airplanes.size() <= (unsigned)airspace_capacity) && (_var == 0)) {
 		do {
@@ -140,11 +136,12 @@ void Control_Tower::add_airplanes()
 		current_airplanes.push_back(_Var);
 	}
 }
-/*Usuwa samoloty ktore juz dolecialy bezpiecznie do brzegu ekranu */
+//Deletes airplanes that have already crossed the entire airspace
 void Control_Tower::del_airplanes()
 {
 	for (it = current_airplanes.begin(); it != current_airplanes.end(); ) {
-		if ((it->x_direction == 1) && (it->x_position == (dimension_width)) || (it->x_direction == 2) && (it->x_position == 2)) {
+		if ((it->x_direction == 1) && (it->x_position == (dimension_width)) 
+			|| (it->x_direction == 2) && (it->x_position == 2)) {
 			it = current_airplanes.erase(it);
 		}
 		else {
@@ -152,7 +149,8 @@ void Control_Tower::del_airplanes()
 		}
 	}
 }
-/*Funkcja ta sprawdza Czy w danej turze ktorykolwiek z samolotow lezy w elipsie o polosi x = 5 i polosi y = 3 innego samolotu, jezeli tak to nastepuje kolizja*/
+/*Checks if at any given time an airplane lies within the radius of another one
+the proximity are is an ellipse of width 5 and height 3*/
 bool Control_Tower::collision()
 {
 	for (unsigned int i = 0; i< current_airplanes.size();++i)
@@ -170,22 +168,23 @@ bool Control_Tower::collision()
 				+ ((static_cast<float>(y_position2) - static_cast<float>(y_position1))
 					* (static_cast<float>(y_position2) - static_cast<float>(y_position1)) / 9);
 			if (Odleglosc <= 1 && Odleglosc > 0) {
-				Zderzenie[0] = current_airplanes.at(i).name;
-				Zderzenie[1] = current_airplanes.at(j).name;
-				return true; // jest kolizja
+				impact[0] = current_airplanes.at(i).name;
+				impact[1] = current_airplanes.at(j).name;
+				return true; // collision occured
 			}
 		}
-	return false;// nie ma kolizji
+	return false;// collision did not occur
 }
-/*Analogiczna funkcja, ale tym razem badajaca czy nowo generowany samolot nie uderzy w zaden obecnie lecacy*/
-bool Control_Tower::collision(Samolot samolot)
+//Similar function, however this one checks if newly generated airplanes
+// will not come into collision with existing ones
+bool Control_Tower::collision(Airplane new_airplane)
 {
 	for (unsigned int i = 0; i < current_airplanes.size(); ++i){
 
 
-	int x_position1 = samolot.x_position;
+	int x_position1 = new_airplane.x_position;
 	int x_position2 = current_airplanes.at(i).x_position;
-	int y_position1 = samolot.y_position;
+	int y_position1 = new_airplane.y_position;
 	int y_position2 = current_airplanes.at(i).y_position;
 
 	float Odleglosc = (((static_cast<float>(x_position2) - static_cast<float>(x_position1))
@@ -193,11 +192,11 @@ bool Control_Tower::collision(Samolot samolot)
 		+ ((static_cast<float>(y_position2) - static_cast<float>(y_position1))
 		* (static_cast<float>(y_position2) - static_cast<float>(y_position1))/9);
 	if (Odleglosc <= 1 && Odleglosc > 0)
-		return true;// jest kolizja
+		return true;// collision occured
 }
-	return false;// nie ma kolizji
+	return false;// collision did not occur
 }
-/*Funkcja zapewnia ze kazdy samolot bedzie mial unikalna nazwe*/
+//asserting each airplane will have an unique name
 bool Control_Tower::is_name_available(char name)
 {
 	for (it = current_airplanes.begin(); it != current_airplanes.end(); ++it)
@@ -209,34 +208,34 @@ bool Control_Tower::is_name_available(char name)
 	}
 	return true;
 }
-/*Funkcja przyjmujaca komendy i zmieniajaca je w polecenia dla samolotow*/
-void Control_Tower::airplane_action(string komenda)
+// input commands, transform them into directions for airplanes
+void Control_Tower::airplane_action(string command)
 {
-	vector<Samolot>::iterator itp;
-	for(itp = current_airplanes.begin(); itp->name != komenda[0]; itp++)
+	vector<Airplane>::iterator itp;
+	for(itp = current_airplanes.begin(); itp->name != command[0]; itp++)
 	{ }
-	if (komenda[1] == 'c')
+	if (command[1] == 'c')
 	{
 		itp->y_direction = '=';
 		itp->current_yaw = 0;
 	}
 	else {
-		if (komenda[1] == '\\') {
+		if (command[1] == '\\') {
 			if (itp->x_direction == 1)
 				itp->y_direction = '\\';
 			else if (itp->x_direction == 2)
 				itp->y_direction = '\\';
 		}
-		else if (komenda[1] == '\/') {
+		else if (command[1] == '\/') {
 			if (itp->x_direction == 1)
 				itp->y_direction = '\/';
 			else if (itp->x_direction == 2)
 				itp->y_direction = '\/';
 		}
-		itp->current_yaw = itp->current_yaw +  static_cast<int>(komenda[2]-48);
+		itp->current_yaw = itp->current_yaw +  static_cast<int>(command[2]-48);
 	}
 }
-/*Wykonanie pojedynczej tury, przesuniecie samolotu w lewo/w prawo(zawsze) oraz ewentualnie w gore lub dol*/
+// one "turn" of the game, executes the current move for the airplane
 void Control_Tower::next_cycle()
 {
 	for (it = current_airplanes.begin(); it != current_airplanes.end(); ++it) {
@@ -266,11 +265,11 @@ void Control_Tower::next_cycle()
 			it->y_direction = '=';
 	}
 }
-/*Funkcja wypisuje aktualne polozenie samolotow w konsoli*/
+// redraws current state of the airspace
 void Control_Tower::draw_airplanes()
 {
 	for (it = current_airplanes.begin(); it != current_airplanes.end(); ++it) {
-		Samolot _Var = *it;
+		Airplane _Var = *it;
 		if ((_Var.x_position == 1) || (_Var.x_position) == dimension_width) {
 			if (_Var.x_direction == 1) {
 				gotoxy(2, _Var.y_position + 1);
@@ -291,12 +290,12 @@ void Control_Tower::draw_airplanes()
 		}
 	}
 }
-/*Skromna funkcja w duzym przyblizeniu obliczajaca optymalna maksymalna ilosc samolotow*/
+// vague approximation of how many airplanes will fit in the current airspace
 void Control_Tower::get_airspace_capacity()
 {
 	airspace_capacity = (dimension_width*dimension_height)/150 +2;
 }
-/*Funkcja wypisujaca "Niebo"*/
+// draws the environment
 void Control_Tower::draw_environment()
 {
 	CLS
@@ -310,36 +309,38 @@ void Control_Tower::draw_environment()
 			}
 		}
 }
-/*Ustawia rozmiary naszego nieba*/
+// setter for size of the airspace
 void Control_Tower::set_dimensions()
 {
 	srand(int(time(nullptr)));
 	draw_stars(1);
-	cout << "Prosze podac wysokosc nieba, enter, a nastepnie szerokosc nieba:\n";
+	cout << "Please enter the airspace's height, then width:\n";
 	draw_stars(2);
 	draw_stars(3);
 	int a, b;
 	do {
 		cin >> a;
-		if (a < 7) cout << "Prosze podac liczbe wieksza od 6!\n";
+		if (a < 7) cout << "Input a number bigger than 6!\n";
 	} while (a < 7);
 	dimension_height = a;
 	do {
 		cin >> b;
-		if (b < 7) cout << "Prosze podac liczbe wieksza od 6!\n";
+		if (b < 7) cout << "Input a number bigger than 6!\n";
 	} while (b < 7);
 	dimension_width = b;
 	cin.ignore();
 }
-/*display_message wyswietlany podczas pracy programu*/
-void Control_Tower::display_message()
+//displays controls for the game under the airspace
+void Control_Tower::display_controls()
 {
 	gotoxy(1, dimension_height + 1);
-	cout << "Spacja - nastepna tura,\n<znak samolotu> / <liczba 1-9> - nakaz wzniesienia sie o podana liczbe pol,\n"
-		<< "<znak samolotu> \\ <liczba 1-9> - nakaz opadania o podana liczbe pol,\n"
-		<< "<znak samolotu> c - anulowanie rozkazu.";
+	cout << " Space - next cycle,\n <airplane name> / <number from 1-9> - order the airplane to raise by a given height\n"
+		<< " <airplane name> \\ <number from 1-9> - order to fall by a given height\n"
+		<< " If the plane is flying from right to left, the \\ and / are inverted\n"
+		<< " <airplane name> c - cancel the order.\n"
+		<< " Example \"B/3\" - order the airplane B to fall 3 units in next 3 cycles.";
 }
-/*Niestandardowa funkcja ktora ustawia kursor na danych wspolrzednychw  konsoli*/
+// goto function used to draw characters
 void gotoxy(int x, int y)
 {
 	COORD c;
@@ -347,19 +348,19 @@ void gotoxy(int x, int y)
 	c.Y = y - 1;
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
 }
-/*Tutaj zawiera sie caly program*/
-void MenuGlowne()
+// contains the whole game
+void MainMenu()
 {
 	int wybor;
 	do
 	{
 		CLS
 			draw_stars(1);
-		cout << "Mini Symulacja Wiezy Kontroli lotow w konsoli by Damian Kakol and Krzysztof Dymanowski\n";
-		cout << "                 Prosze podac numer opcji i wcisnac enter: \n"
-			<< "   1. Prezentacja Symulacji\n"
-			<< "   2. Krotkie omowienie dzialania programu\n"
-			<< "   3. Wyjscie z programu.\n";
+		cout << "  Minigame of operating a control tower by Krzysztof Dymanowski\n"
+			 << "  Please select the number corresponding to your choice: \n"
+			 << "    1. Play the game\n"
+			 << "    2. Instructions\n"
+		  	 << "    3. Exit.\n";
 		draw_stars(2);
 		draw_stars(3);
 		cin >> wybor;
@@ -368,30 +369,27 @@ void MenuGlowne()
 		case 1: {CLS
 			Control_Tower Boeing;}
 			  break;
-		case 2: show_instruction();
+		case 2: show_instructions();
 			break;
 		case 3: exit(0);
 			break;
 		}
 	} while (wybor != 3);
 }
-/*Krotka instrukcja i omowienie dzialania programu*/
-void show_instruction()
+// short instructions describing the controls of the game
+void show_instructions()
 {
 	CLS
 		draw_stars(1);
-	cout << " Symulator Wiezy Kontroli lotow jest prostym przykladem tego jak programowanie\n"
-		<< " obiektowe moze znaczaco ulatwic zycie programiscie. Dzieki dzialaniu jednej klasy\n"
-		<< " nie trzeba dzielic naszego podprogramu na poszczegolne funkcje, a jedynie na metody\n"
-		<< " ktore operuja na skladowych klasy typu \"private\".\n"
-	    << " Spacja - nastepna tura,\n<znak samolotu> / <liczba 1-9> - nakaz wzniesienia sie o podana liczbe pol,\n"
-		<< " <znak samolotu> \\ <liczba 1-9> - nakaz opadania o podana liczbe pol,\n"
-		<< " <znak samolotu> c - anulowanie rozkazu.\n";
+	cout << " Space - next cycle,\n airplane name> / <number from 1-9> - order the airplane to raise by a given height\n"
+		 << " <airplane name> \\ <number from 1-9> - order to fall by a given height\n"
+		 << " If the plane is flying from right to left, the \\ and / are inverted\n"
+		 << " <airplane name> c - cancel the order. \n";
 	draw_stars(2);
 	draw_stars(3);
 	PAUSE
 }
-/*Minimum mimorum oprawy graficznej dla projektu*/
+// used to draw simple graphic components
 void draw_stars(int n)
 {
 	switch (n)
@@ -407,6 +405,6 @@ void draw_stars(int n)
 
 int main()
 {
-	MenuGlowne();
+	MainMenu();
 	return 0;
 }
